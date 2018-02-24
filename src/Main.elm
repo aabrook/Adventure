@@ -6,6 +6,7 @@ import Svg.Attributes exposing (height, width)
 
 import Keyboard exposing (..)
 import Char exposing (..)
+import Time exposing (Time, second)
 
 import World.Tile.Tile as T exposing (..)
 import World.World as W exposing (..)
@@ -69,6 +70,7 @@ type Msg
     = NoOp
     | Presses Char
     | Releases Char
+    | Tick Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -78,13 +80,24 @@ update msg model =
     Presses c -> (
       { model
       | key = Just c
-      , player = model.player |> Maybe.map (movePlayer c)
       }
       , Cmd.none )
     Releases c -> (
       { model | key = Nothing }
       , Cmd.none
       )
+    Tick time ->
+      let
+        move =
+          case model.key of
+            Nothing -> model.player
+            Just k ->
+              model.player
+              |> Maybe.map (movePlayer k)
+      in (
+        { model | player = move }
+        , Cmd.none
+        )
 
 
 
@@ -108,6 +121,7 @@ subscriptions model =
   Sub.batch
     [ Keyboard.downs (Presses << fromCode)
     , Keyboard.ups (Releases << fromCode)
+    , Time.every (second / 30) Tick
     ]
 
 ---- PROGRAM ----
