@@ -4,6 +4,9 @@ import Html exposing (Html, text, div, h1, img)
 import Svg exposing (Svg, svg)
 import Svg.Attributes exposing (height, width)
 
+import Keyboard exposing (..)
+import Char exposing (..)
+
 import World.Tile.Tile as T exposing (..)
 import World.World as W exposing (..)
 import Player.Player as P exposing (..)
@@ -30,17 +33,33 @@ worldView =
   in
     withWalls
 
+movePlayer : Char -> Player -> Player
+movePlayer direction player =
+  let
+    whichWay =
+      case direction of
+        '%' -> Just P.Left
+        '(' -> Just P.Down -- down
+        '\'' -> Just P.Right -- right
+        '&' -> Just P.Up -- up
+        _ -> Nothing
+  in
+    whichWay
+    |> Maybe.map (\d -> P.movePlayer d 2 player)
+    |> Maybe.withDefault player
+
 ---- MODEL ----
 
 
 type alias Model =
   { player : Maybe Player
+  , key : Maybe Char
   }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { player = Just defaultPlayer }, Cmd.none )
+    ( { player = Just defaultPlayer, key = Nothing }, Cmd.none )
 
 
 ---- UPDATE ----
@@ -48,11 +67,24 @@ init =
 
 type Msg
     = NoOp
+    | Presses Char
+    | Releases Char
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+  case msg of
+    NoOp -> ( model, Cmd.none )
+    Presses c -> (
+      { model
+      | key = Just c
+      , player = model.player |> Maybe.map (movePlayer c)
+      }
+      , Cmd.none )
+    Releases c -> (
+      { model | key = Nothing }
+      , Cmd.none
+      )
 
 
 
@@ -70,6 +102,13 @@ view model =
       ]
 
 
+---- SUBS ----
+subscriptions: Model -> Sub Msg
+subscriptions model =
+  Sub.batch
+    [ Keyboard.downs (Presses << fromCode)
+    , Keyboard.ups (Releases << fromCode)
+    ]
 
 ---- PROGRAM ----
 
@@ -80,5 +119,5 @@ main =
         { view = view
         , init = init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }

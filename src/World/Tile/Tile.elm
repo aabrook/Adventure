@@ -2,6 +2,7 @@ module World.Tile.Tile exposing (
     Tile
   , create
   , view
+  , move
   )
 
 import Maybe exposing (withDefault)
@@ -22,6 +23,15 @@ type Tile = Tile Tile_
 
 create : Maybe String -> Int -> Int -> Int -> Int -> Tile
 create color x y height width = Tile <| Tile_ color (Coord x y) height width
+
+move : Int -> Int -> Tile -> Tile
+move x y tile =
+  let
+    newPosition oldPos = case oldPos of
+      Coord xPos yPos -> Coord (xPos + x) (yPos + y)
+  in
+    case tile of
+      Tile t -> Tile { t | position = newPosition t.position }
 
 view : Tile -> Svg a
 view tile =
